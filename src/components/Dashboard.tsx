@@ -71,16 +71,21 @@ const Dashboard = () => {
   const analyzeRepositoriesWithRequirements = async (repos: GitHubRepository[]) => {
     if (!apiClient || !user) return;
 
+    console.log('Starting analysis for repositories:', repos.map(r => r.name));
+
     const analysisPromises = repos.slice(0, 10).map(async (repo) => {
       try {
         const [owner, repoName] = repo.full_name.split('/');
-        console.log(`Checking ${repo.full_name} for requirements.txt...`);
+        console.log(`\n=== Analyzing ${repo.full_name} ===`);
+        console.log(`Owner: ${owner}, Repo: ${repoName}`);
         
         // First check if requirements.txt exists
+        console.log('Checking for requirements.txt...');
         const requirementsTxt = await apiClient.getRequirementsTxt(owner, repoName);
-        console.log(`Requirements.txt for ${repo.full_name}:`, requirementsTxt ? 'Found' : 'Not found');
+        console.log(`Requirements.txt result:`, requirementsTxt);
         
         if (!requirementsTxt) {
+          console.log(`❌ No requirements.txt found in ${repo.full_name}`);
           return {
             repository: repo,
             totalFiles: 0,
@@ -91,8 +96,9 @@ const Dashboard = () => {
           };
         }
         
+        console.log(`✅ Found requirements.txt in ${repo.full_name}, starting compliance analysis...`);
         const analysis = await apiClient.analyzeCodeCompliance(owner, repoName);
-        console.log(`Analysis for ${repo.full_name}:`, analysis);
+        console.log(`Analysis complete for ${repo.full_name}:`, analysis);
         
         return {
           repository: repo,
@@ -103,7 +109,7 @@ const Dashboard = () => {
           lastChecked: new Date()
         };
       } catch (error) {
-        console.error(`Failed to analyze ${repo.full_name}:`, error);
+        console.error(`❌ Failed to analyze ${repo.full_name}:`, error);
         return {
           repository: repo,
           totalFiles: 0,
@@ -116,7 +122,11 @@ const Dashboard = () => {
     });
 
     const results = await Promise.all(analysisPromises);
-    console.log('All analysis results:', results);
+    console.log('\n=== Final Analysis Results ===');
+    console.log('Total results:', results.length);
+    results.forEach(result => {
+      console.log(`${result.repository.name}: hasRequirementsTxt=${result.hasRequirementsTxt}, violations=${result.violations.length}`);
+    });
     setAnalyses(results);
   };
 

@@ -238,9 +238,10 @@ const Dashboard = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Connected to GitHub</p>
                 <p className="font-medium text-foreground">github.com/{user?.login}</p>
-                {reposWithRequirements.length > 0 && (
+                {repositories.length > 0 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Monitoring: {reposWithRequirements.map(a => a.repository.name).join(', ')}
+                    Repositories: {repositories.slice(0, 5).map(r => r.name).join(', ')}
+                    {repositories.length > 5 && ` +${repositories.length - 5} more`}
                   </p>
                 )}
               </div>

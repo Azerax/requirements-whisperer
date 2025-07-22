@@ -49,12 +49,15 @@ const Dashboard = () => {
     
     setLoading(true);
     try {
+      console.log('Loading repositories for user:', user?.login);
       const repos = await apiClient.getUserRepositories(user.login);
+      console.log('Loaded repositories:', repos.length, repos.map(r => r.name));
       setRepositories(repos);
       
       // Auto-analyze repositories with requirements.txt
       analyzeRepositoriesWithRequirements(repos);
     } catch (error) {
+      console.error('Error loading repositories:', error);
       toast({
         title: "Error",
         description: "Failed to load repositories",

@@ -6,8 +6,12 @@ import AuthDialog from "@/components/auth/AuthDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Header = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, signIn } = useAuth();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+
+  const handleAuthSuccess = (user: any) => {
+    signIn(user);
+  };
 
   return (
     <>
@@ -32,13 +36,13 @@ const Header = () => {
                   </Button>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.user_metadata?.avatar_url} />
+                      <AvatarImage src={user.avatar_url || undefined} />
                       <AvatarFallback>
-                        {user.user_metadata?.user_name?.[0]?.toUpperCase() || 'U'}
+                        {user.name?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-sm text-foreground">
-                      {user.user_metadata?.user_name || user.email}
+                      {user.name || user.email}
                     </span>
                   </div>
                   <Button variant="ghost" size="icon" onClick={signOut}>
@@ -64,6 +68,7 @@ const Header = () => {
       <AuthDialog 
         open={authDialogOpen} 
         onOpenChange={setAuthDialogOpen}
+        onAuthSuccess={handleAuthSuccess}
       />
     </>
   );

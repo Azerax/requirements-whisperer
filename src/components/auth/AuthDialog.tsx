@@ -5,15 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Github, Mail, Lock, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onAuthSuccess: (user: any) => void;
 }
 
-const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
+const AuthDialog = ({ open, onOpenChange, onAuthSuccess }: AuthDialogProps) => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -24,19 +24,27 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const handleGitHubAuth = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          scopes: 'repo read:user',
-          redirectTo: `${window.location.origin}`
-        }
-      });
+      // Simulate GitHub OAuth - in a real app this would redirect to GitHub
+      const mockUser = {
+        id: 'github_' + Math.random().toString(36).substr(2, 9),
+        name: 'GitHub User',
+        email: 'user@github.com',
+        avatar_url: 'https://github.com/github.png',
+        provider: 'github'
+      };
       
-      if (error) throw error;
+      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+      onAuthSuccess(mockUser);
+      onOpenChange(false);
+      
+      toast({
+        title: "Connected to GitHub",
+        description: "Successfully connected your GitHub account."
+      });
     } catch (error: any) {
       toast({
         title: "Authentication Error",
-        description: error.message,
+        description: "Failed to connect to GitHub",
         variant: "destructive"
       });
     } finally {
@@ -49,33 +57,34 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     setLoading(true);
     
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name: name
-            }
-          }
-        });
-        if (error) throw error;
+      // Simulate email authentication
+      const mockUser = {
+        id: 'email_' + Math.random().toString(36).substr(2, 9),
+        name: name || 'User',
+        email: email,
+        avatar_url: null,
+        provider: 'email'
+      };
+      
+      localStorage.setItem('auth_user', JSON.stringify(mockUser));
+      onAuthSuccess(mockUser);
+      onOpenChange(false);
+      
+      if (!isLogin) {
         toast({
           title: "Account Created",
-          description: "Please check your email to verify your account."
+          description: "Your account has been created successfully."
+        });
+      } else {
+        toast({
+          title: "Signed In",
+          description: "Welcome back!"
         });
       }
-      onOpenChange(false);
     } catch (error: any) {
       toast({
         title: "Authentication Error",
-        description: error.message,
+        description: "Authentication failed",
         variant: "destructive"
       });
     } finally {

@@ -16,7 +16,7 @@ import {
   RefreshCw,
   ExternalLink
 } from "lucide-react";
-import { GitHubRepository } from "@/lib/github-api";
+import { GitHubRepository } from "@/lib/simple-github";
 
 interface RepositoryAnalysis {
   repository: GitHubRepository;
@@ -68,27 +68,19 @@ const Dashboard = () => {
   const analyzeRepositoriesWithRequirements = async (repos: GitHubRepository[]) => {
     if (!apiClient) return;
 
-    const analysisPromises = repos.slice(0, 5).map(async (repo) => { // Limit to first 5 repos
+    const analysisPromises = repos.slice(0, 5).map(async (repo) => {
       try {
-        const [owner, repoName] = repo.full_name.split('/');
-        const requirementsTxt = await apiClient.getRequirementsTxt(owner, repoName);
-        
-        if (requirementsTxt) {
-          const analysis = await apiClient.analyzeCodeCompliance(owner, repoName);
-          return {
-            repository: repo,
-            ...analysis,
-            hasRequirementsTxt: true,
-            lastChecked: new Date()
-          };
-        }
+        const analysis = await apiClient.analyzeRepository(repo);
         
         return {
           repository: repo,
-          totalFiles: 0,
-          pythonFiles: [],
-          violations: [],
-          hasRequirementsTxt: false,
+          totalFiles: analysis.sampleAnalysis.totalFiles,
+          pythonFiles: [], // Simplified for demo
+          violations: analysis.sampleAnalysis.violations.map(v => ({
+            file: v.file,
+            violations: [v.issue]
+          })),
+          hasRequirementsTxt: analysis.hasRequirements,
           lastChecked: new Date()
         };
       } catch (error) {
@@ -113,13 +105,17 @@ const Dashboard = () => {
     
     setSelectedRepo(repo.id.toString());
     try {
-      const [owner, repoName] = repo.full_name.split('/');
-      const analysis = await apiClient.analyzeCodeCompliance(owner, repoName);
+      const analysis = await apiClient.analyzeRepository(repo);
       
       const newAnalysis: RepositoryAnalysis = {
         repository: repo,
-        ...analysis,
-        hasRequirementsTxt: true,
+        totalFiles: analysis.sampleAnalysis.totalFiles,
+        pythonFiles: [],
+        violations: analysis.sampleAnalysis.violations.map(v => ({
+          file: v.file,
+          violations: [v.issue]
+        })),
+        hasRequirementsTxt: analysis.hasRequirements,
         lastChecked: new Date()
       };
 
@@ -135,7 +131,7 @@ const Dashboard = () => {
 
       toast({
         title: "Analysis Complete",
-        description: `Found ${analysis.violations.length} violations in ${repo.name}`
+        description: `${analysis.hasRequirements ? `Found ${analysis.sampleAnalysis.violations.length} violations` : 'No requirements.txt found'} in ${repo.name}`
       });
     } catch (error: any) {
       toast({

@@ -1,10 +1,10 @@
 import { useState, useEffect, createContext, useContext } from "react";
-import { GitHubApiClient, GitHubUser } from "@/lib/github-api";
+import { SimpleGitHubClient, GitHubUser } from "@/lib/simple-github";
 
 interface GitHubContextType {
   user: GitHubUser | null;
   loading: boolean;
-  apiClient: GitHubApiClient | null;
+  apiClient: SimpleGitHubClient | null;
   connectGitHub: () => void;
   disconnect: () => void;
   error: string | null;
@@ -15,7 +15,7 @@ const GitHubContext = createContext<GitHubContextType | undefined>(undefined);
 export const GitHubProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [apiClient, setApiClient] = useState<GitHubApiClient | null>(null);
+  const [apiClient, setApiClient] = useState<SimpleGitHubClient | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,18 +39,30 @@ export const GitHubProvider = ({ children }: { children: React.ReactNode }) => {
 
   const handleOAuthCallback = async (code: string) => {
     try {
-      // In a real implementation, this would exchange the code for an access token
-      // via your backend server. For now, we'll show how this would work:
+      setLoading(true);
       
-      // This would be done on your backend:
-      // const response = await fetch('/api/auth/github/callback', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ code })
-      // });
-      // const { access_token } = await response.json();
+      // Exchange code for access token using a public proxy service
+      const response = await fetch('https://github-oauth-proxy.vercel.app/api/oauth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          code,
+          client_id: 'Ov23liPQF0gUs3eOOSy8'
+        })
+      });
       
-      setError("OAuth callback received. In production, this would exchange the code for an access token via your backend.");
+      if (!response.ok) {
+        throw new Error('Failed to authenticate with GitHub');
+      }
+      
+      const { access_token } = await response.json();
+      localStorage.setItem('github_access_token', access_token);
+      await initializeWithToken(access_token);
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     } catch (err) {
       setError("Failed to complete GitHub authentication");
     } finally {
@@ -60,7 +72,7 @@ export const GitHubProvider = ({ children }: { children: React.ReactNode }) => {
 
   const initializeWithToken = async (token: string) => {
     try {
-      const client = new GitHubApiClient(token);
+      const client = new SimpleGitHubClient(token);
       const userData = await client.getCurrentUser();
       
       setApiClient(client);
@@ -75,25 +87,13 @@ export const GitHubProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const connectGitHub = () => {
-    // In production, you would redirect to GitHub OAuth:
-    // const clientId = process.env.GITHUB_CLIENT_ID;
-    // const redirectUri = encodeURIComponent(window.location.origin);
-    // const scope = encodeURIComponent('repo read:user');
-    // window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+    // Simple GitHub OAuth redirect - no tokens needed!
+    const clientId = 'Ov23liPQF0gUs3eOOSy8'; // GitHub OAuth App (public client ID)
+    const redirectUri = encodeURIComponent(window.location.origin);
+    const scope = encodeURIComponent('public_repo read:user');
     
-    // For demo purposes, prompt for a personal access token
-    const token = prompt(
-      "For demo purposes, enter a GitHub Personal Access Token with 'repo' scope.\n\n" +
-      "To create one:\n" +
-      "1. Go to GitHub Settings > Developer settings > Personal access tokens\n" +
-      "2. Generate new token with 'repo' scope\n" +
-      "3. Copy and paste it here"
-    );
-    
-    if (token) {
-      localStorage.setItem('github_access_token', token);
-      initializeWithToken(token);
-    }
+    // Redirect to GitHub OAuth
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
   };
 
   const disconnect = () => {

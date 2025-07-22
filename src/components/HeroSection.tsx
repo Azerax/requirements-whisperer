@@ -30,7 +30,15 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button variant="hero" size="lg" className="gap-3 px-8 py-6 text-lg">
+            <Button 
+              variant="hero" 
+              size="lg" 
+              className="gap-3 px-8 py-6 text-lg"
+              onClick={() => {
+                const authButton = document.querySelector('[data-connect-github]') as HTMLButtonElement;
+                authButton?.click();
+              }}
+            >
               <Github className="h-5 w-5" />
               Connect GitHub Account
             </Button>

@@ -57,13 +57,19 @@ export class RealGitHubClient {
   }
 
   async getUserRepositories(username: string): Promise<GitHubRepository[]> {
+    console.log('getUserRepositories called with:', { username, hasToken: !!this.accessToken });
+    
     if (this.accessToken) {
       // If we have a token, use the authenticated user's repos endpoint to get both public and private
+      console.log('Using authenticated endpoint: /user/repos');
       const repos = await this.makeRequest<GitHubRepository[]>(`/user/repos?sort=updated&per_page=100`);
+      console.log('Authenticated repos result:', repos.length, 'repositories');
       return repos;
     } else {
       // Without token, only public repos
+      console.log('Using public endpoint: /users/' + username + '/repos');
       const repos = await this.makeRequest<GitHubRepository[]>(`/users/${username}/repos?sort=updated&per_page=100`);
+      console.log('Public repos result:', repos.length, 'repositories (filtering private)');
       return repos.filter(repo => !repo.private);
     }
   }

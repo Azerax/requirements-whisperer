@@ -22,15 +22,28 @@ export interface GitHubUser {
 export class RealGitHubClient {
   private accessToken?: string;
   private baseUrl = 'https://api.github.com';
+  private debugLogger?: (message: string) => void;
 
   constructor(accessToken?: string) {
     this.accessToken = accessToken;
   }
 
+  setDebugLogger(logger: (message: string) => void) {
+    this.debugLogger = logger;
+  }
+
+  private log(message: string) {
+    if (this.debugLogger) {
+      this.debugLogger(message);
+    } else {
+      console.log(message);
+    }
+  }
+
   private async makeRequest<T>(endpoint: string): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    console.log(`🌐 Making GitHub API request to: ${url}`);
-    console.log(`🔑 Using token: ${this.accessToken ? 'Yes' : 'No'}`);
+    this.log(`🌐 Making GitHub API request to: ${url}`);
+    this.log(`🔑 Using token: ${this.accessToken ? 'Yes' : 'No'}`);
     
     const headers: Record<string, string> = {
       'Accept': 'application/vnd.github.v3+json',
@@ -38,19 +51,19 @@ export class RealGitHubClient {
 
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
-      console.log(`🔒 Authorization header set`);
+      this.log(`🔒 Authorization header set`);
     }
 
     const response = await fetch(url, { headers });
-    console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+    this.log(`📡 Response status: ${response.status} ${response.statusText}`);
     
     if (!response.ok) {
-      console.error(`❌ GitHub API Error: ${response.status} ${response.statusText}`);
+      this.log(`❌ GitHub API Error: ${response.status} ${response.statusText}`);
       throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log(`📦 Response data length/type: ${Array.isArray(data) ? data.length + ' items' : typeof data}`);
+    this.log(`📦 Response data length/type: ${Array.isArray(data) ? data.length + ' items' : typeof data}`);
     return data;
   }
 
@@ -66,19 +79,19 @@ export class RealGitHubClient {
   }
 
   async getUserRepositories(username: string): Promise<GitHubRepository[]> {
-    console.log('getUserRepositories called with:', { username, hasToken: !!this.accessToken });
+    this.log(`getUserRepositories called with: username=${username}, hasToken=${!!this.accessToken}`);
     
     if (this.accessToken) {
       // If we have a token, use the authenticated user's repos endpoint to get both public and private
-      console.log('Using authenticated endpoint: /user/repos');
+      this.log('Using authenticated endpoint: /user/repos');
       const repos = await this.makeRequest<GitHubRepository[]>(`/user/repos?sort=updated&per_page=100`);
-      console.log('Authenticated repos result:', repos.length, 'repositories');
+      this.log(`Authenticated repos result: ${repos.length} repositories`);
       return repos;
     } else {
       // Without token, only public repos
-      console.log('Using public endpoint: /users/' + username + '/repos');
+      this.log('Using public endpoint: /users/' + username + '/repos');
       const repos = await this.makeRequest<GitHubRepository[]>(`/users/${username}/repos?sort=updated&per_page=100`);
-      console.log('Public repos result:', repos.length, 'repositories (filtering private)');
+      this.log(`Public repos result: ${repos.length} repositories (filtering private)`);
       return repos.filter(repo => !repo.private);
     }
   }

@@ -61,6 +61,9 @@ const Dashboard = () => {
     addDebugLog(`🔄 Loading repositories for user: ${user?.login}`);
     addDebugLog(`🔑 API client has token: ${!!(apiClient as any).accessToken}`);
     
+    // Set debug logger on the API client
+    (apiClient as any).setDebugLogger = addDebugLog;
+    
     setLoading(true);
     try {
       addDebugLog('📡 Calling getUserRepositories...');

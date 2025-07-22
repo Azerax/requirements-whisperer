@@ -62,7 +62,9 @@ const Dashboard = () => {
     addDebugLog(`🔑 API client has token: ${!!(apiClient as any).accessToken}`);
     
     // Set debug logger on the API client
-    (apiClient as any).setDebugLogger = addDebugLog;
+    if ((apiClient as any).setDebugLogger) {
+      (apiClient as any).setDebugLogger(addDebugLog);
+    }
     
     setLoading(true);
     try {
@@ -74,10 +76,12 @@ const Dashboard = () => {
       // Auto-analyze repositories with requirements.txt
       analyzeRepositoriesWithRequirements(repos);
     } catch (error) {
-      addDebugLog(`❌ Error loading repositories: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugLog(`❌ Error loading repositories: ${errorMessage}`);
+      addDebugLog(`❌ Error details: ${JSON.stringify(error)}`);
       toast({
         title: "Error",
-        description: "Failed to load repositories",
+        description: `Failed to load repositories: ${errorMessage}`,
         variant: "destructive"
       });
     } finally {

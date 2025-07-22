@@ -116,17 +116,32 @@ export class RealGitHubClient {
 
   async getFileContent(owner: string, repo: string, path: string, branch: string = 'main'): Promise<string | null> {
     try {
-      // Try using raw.githubusercontent.com first (no API rate limits)
-      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
-      const response = await fetch(rawUrl);
-      
-      if (response.ok) {
-        return await response.text();
-      }
+      // For private repos or when we have a token, use the GitHub API
+      if (this.accessToken) {
+        try {
+          const response = await this.makeRequest<any>(`/repos/${owner}/${repo}/contents/${path}?ref=${branch}`);
+          if (response.content && response.encoding === 'base64') {
+            return atob(response.content);
+          }
+        } catch (apiError) {
+          // If branch fails, try with master
+          if (branch === 'main') {
+            return this.getFileContent(owner, repo, path, 'master');
+          }
+        }
+      } else {
+        // Try using raw.githubusercontent.com for public repos without token
+        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+        const response = await fetch(rawUrl);
+        
+        if (response.ok) {
+          return await response.text();
+        }
 
-      // If main branch fails, try master
-      if (branch === 'main') {
-        return this.getFileContent(owner, repo, path, 'master');
+        // If main branch fails, try master
+        if (branch === 'main') {
+          return this.getFileContent(owner, repo, path, 'master');
+        }
       }
 
       return null;

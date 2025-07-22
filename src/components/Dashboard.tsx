@@ -96,18 +96,19 @@ const Dashboard = () => {
 
     addDebugLog(`🔍 Starting analysis for ${repos.length} repositories: ${repos.map(r => r.name).join(', ')}`);
 
+    // Check all repositories for requirements.txt first (not just analyze those that have it)
     const analysisPromises = repos.slice(0, 10).map(async (repo) => {
       try {
         const [owner, repoName] = repo.full_name.split('/');
         addDebugLog(`=== Analyzing ${repo.full_name} ===`);
         
-        // First check if requirements.txt exists
+        // First check if requirements.txt exists (case-insensitive)
         addDebugLog(`Checking ${repo.name} for requirements.txt...`);
         const requirementsTxt = await apiClient.getRequirementsTxt(owner, repoName);
         addDebugLog(`Requirements.txt for ${repo.name}: ${requirementsTxt ? 'Found ✅' : 'Not found ❌'}`);
         
         if (!requirementsTxt) {
-          console.log(`❌ No requirements.txt found in ${repo.full_name}`);
+          addDebugLog(`❌ No requirements.txt found in ${repo.full_name}`);
           return {
             repository: repo,
             totalFiles: 0,
@@ -118,9 +119,9 @@ const Dashboard = () => {
           };
         }
         
-        console.log(`✅ Found requirements.txt in ${repo.full_name}, starting compliance analysis...`);
+        addDebugLog(`✅ Found requirements.txt in ${repo.full_name}, starting compliance analysis...`);
         const analysis = await apiClient.analyzeCodeCompliance(owner, repoName);
-        console.log(`Analysis complete for ${repo.full_name}:`, analysis);
+        addDebugLog(`Analysis complete for ${repo.full_name}: ${analysis.violations.length} violations found`);
         
         return {
           repository: repo,
@@ -131,7 +132,7 @@ const Dashboard = () => {
           lastChecked: new Date()
         };
       } catch (error) {
-        console.error(`❌ Failed to analyze ${repo.full_name}:`, error);
+        addDebugLog(`❌ Failed to analyze ${repo.full_name}: ${error instanceof Error ? error.message : String(error)}`);
         return {
           repository: repo,
           totalFiles: 0,
@@ -144,10 +145,10 @@ const Dashboard = () => {
     });
 
     const results = await Promise.all(analysisPromises);
-    console.log('\n=== Final Analysis Results ===');
-    console.log('Total results:', results.length);
+    addDebugLog('\n=== Final Analysis Results ===');
+    addDebugLog(`Total results: ${results.length}`);
     results.forEach(result => {
-      console.log(`${result.repository.name}: hasRequirementsTxt=${result.hasRequirementsTxt}, violations=${result.violations.length}`);
+      addDebugLog(`${result.repository.name}: hasRequirementsTxt=${result.hasRequirementsTxt}, violations=${result.violations.length}`);
     });
     setAnalyses(results);
   };

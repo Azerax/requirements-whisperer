@@ -62,13 +62,15 @@ const Dashboard = () => {
     addDebugLog(`🔑 API client has token: ${!!(apiClient as any).accessToken}`);
     
     // Set debug logger on the API client
-    if ((apiClient as any).setDebugLogger) {
+    if (apiClient && typeof (apiClient as any).setDebugLogger === 'function') {
       (apiClient as any).setDebugLogger(addDebugLog);
     }
     
     setLoading(true);
     try {
       addDebugLog('📡 Calling getUserRepositories...');
+      addDebugLog(`🔍 API Client type: ${apiClient.constructor.name}`);
+      addDebugLog(`🔍 API Client token exists: ${!!(apiClient as any).accessToken}`);
       const repos = await apiClient.getUserRepositories(user.login);
       addDebugLog(`✅ Loaded ${repos.length} repositories: ${repos.map(r => r.name).join(', ')}`);
       setRepositories(repos);

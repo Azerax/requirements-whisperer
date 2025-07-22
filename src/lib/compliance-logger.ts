@@ -6,8 +6,11 @@ export class ComplianceLogger {
   async upsertRepository(owner: string, name: string, url: string) {
     console.log(`📊 Upserting repository: ${owner}/${name}`)
     
-    // Extract GitHub ID from URL or use a placeholder
-    const githubId = Math.floor(Math.random() * 1000000) // Placeholder for now
+    // Use the helper function to get or create user profile
+    const { data: userId } = await supabase.rpc('ensure_user_profile')
+    
+    // Extract GitHub ID from URL or generate one based on repo name
+    const githubId = Math.abs(this.hashCode(`${owner}/${name}`))
     
     const { data, error } = await supabase
       .from('repositories')
@@ -15,7 +18,7 @@ export class ComplianceLogger {
         name,
         full_name: `${owner}/${name}`,
         github_id: githubId,
-        user_id: '00000000-0000-0000-0000-000000000000', // Will be updated when auth is implemented
+        user_id: userId,
         last_synced_at: new Date().toISOString()
       }, {
         onConflict: 'github_id'
@@ -32,6 +35,16 @@ export class ComplianceLogger {
     return data
   }
 
+  private hashCode(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
+  }
+
   async createAudit(repositoryId: string) {
     console.log(`📊 Creating audit for repository: ${repositoryId}`)
     
@@ -39,7 +52,7 @@ export class ComplianceLogger {
       .from('audits')
       .insert({
         repository_id: repositoryId,
-        status: 'in_progress'
+        status: 'pending'
       })
       .select()
       .single()

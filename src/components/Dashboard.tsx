@@ -400,29 +400,22 @@ const Dashboard = () => {
               </div>
             ) : (
               recentViolations.map((violation, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-gradient-accent rounded-lg border border-border">
-                  <div className="flex items-center gap-3">
-                    <FileX className="h-4 w-4 text-destructive" />
-                    <div className="flex flex-col">
-                      <span className="font-medium text-foreground">{violation.file}</span>
-                      <span className="text-xs text-muted-foreground">{violation.repo}</span>
+                <div key={index} className="p-4 bg-gradient-accent rounded-lg border border-border">
+                  <div className="flex items-start gap-3">
+                    <FileX className="h-4 w-4 text-destructive flex-shrink-0 mt-1" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-foreground text-sm">{violation.file}</span>
+                        <Badge 
+                          variant={violation.severity === "high" ? "destructive" : "outline"}
+                          className="text-xs flex-shrink-0"
+                        >
+                          {violation.severity}
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground block mb-2">{violation.repo}</span>
+                      <span className="text-sm text-foreground break-words">{violation.violation}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col items-end max-w-xs">
-                      <span className="text-sm text-foreground truncate">{violation.violation}</span>
-                      <Badge 
-                        variant={violation.severity === "high" ? "destructive" : "outline"}
-                        className="text-xs"
-                      >
-                        {violation.severity}
-                      </Badge>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={violation.repoUrl} target="_blank" rel="noopener noreferrer">
-                        Fix
-                      </a>
-                    </Button>
                   </div>
                 </div>
               ))

@@ -1,4 +1,18 @@
-# Sample Requirements.txt - Code Compliance Standards
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { FileText, Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const sampleRequirementsContent = `# Sample Requirements.txt - Code Compliance Standards
 # =====================================================
 # This file demonstrates proper requirements.txt formatting and best practices
 # for Python dependency management in compliance-focused environments.
@@ -108,4 +122,80 @@ mypy==1.7.1                    # Type checking - static analysis
 
 # End of requirements.txt
 # Last updated: 2024-01-20
-# Next review: 2024-02-20
+# Next review: 2024-02-20`;
+
+export const SampleRequirementsDialog = () => {
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(sampleRequirementsContent);
+      setCopied(true);
+      toast({
+        title: "Copied!",
+        description: "Sample requirements.txt copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Please select and copy the text manually",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="lg" 
+          className="gap-3 px-8 py-6 text-lg border-primary/20 hover:border-primary"
+        >
+          <FileText className="h-5 w-5" />
+          Sample Requirements.txt
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Sample Requirements.txt
+          </DialogTitle>
+          <DialogDescription>
+            A comprehensive example showing best practices for Python dependency management and compliance standards.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="relative">
+            <Textarea
+              value={sampleRequirementsContent}
+              readOnly
+              className="min-h-[400px] font-mono text-sm bg-muted/50 resize-none"
+            />
+            <Button
+              onClick={handleCopy}
+              className="absolute top-2 right-2 gap-2"
+              size="sm"
+              variant="secondary"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Copy
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

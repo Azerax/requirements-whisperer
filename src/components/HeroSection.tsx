@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Github, Shield, AlertTriangle, CheckCircle, Zap, Heart, FileText } from "lucide-react";
+import { Github, Shield, AlertTriangle, CheckCircle, Zap, Heart } from "lucide-react";
 import { useGitHub } from "@/hooks/useRealGitHub";
+import { SampleRequirementsDialog } from "@/components/SampleRequirementsDialog";
 
 const HeroSection = () => {
   const { user } = useGitHub();
@@ -62,20 +63,7 @@ const HeroSection = () => {
               Connect GitHub Account
             </Button>
             
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="gap-3 px-8 py-6 text-lg border-primary/20 hover:border-primary"
-              onClick={() => {
-                const link = document.createElement('a');
-                link.href = '/sample-requirements.txt';
-                link.download = 'sample-requirements.txt';
-                link.click();
-              }}
-            >
-              <FileText className="h-5 w-5" />
-              Sample Requirements.txt
-            </Button>
+            <SampleRequirementsDialog />
           </div>
 
           {/* Feature Cards */}

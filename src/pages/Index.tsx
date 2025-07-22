@@ -4,6 +4,15 @@ import Dashboard from "@/components/Dashboard";
 import { GitHubProvider, useGitHub } from "@/hooks/useGitHub";
 import { Toaster } from "@/components/ui/toaster";
 
+const Index = () => {
+  return (
+    <GitHubProvider>
+      <IndexContent />
+      <Toaster />
+    </GitHubProvider>
+  );
+};
+
 const IndexContent = () => {
   const { user, loading } = useGitHub();
 
@@ -23,15 +32,6 @@ const IndexContent = () => {
       <Header />
       {user ? <Dashboard /> : <HeroSection />}
     </div>
-  );
-};
-
-const Index = () => {
-  return (
-    <GitHubProvider>
-      <IndexContent />
-      <Toaster />
-    </GitHubProvider>
   );
 };
 

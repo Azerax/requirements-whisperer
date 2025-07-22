@@ -232,12 +232,23 @@ const Dashboard = () => {
       {/* Connected Repository Info */}
       <Card className="bg-card border-border">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <GitBranch className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">Connected to GitHub</p>
-              <p className="font-medium text-foreground">github.com/{user?.login}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <GitBranch className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-sm text-muted-foreground">Connected to GitHub</p>
+                <p className="font-medium text-foreground">github.com/{user?.login}</p>
+                {reposWithRequirements.length > 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Monitoring: {reposWithRequirements.map(a => a.repository.name).join(', ')}
+                  </p>
+                )}
+              </div>
             </div>
+            <Badge variant="outline" className="gap-1">
+              <CheckCircle className="h-3 w-3 text-success" />
+              {reposWithRequirements.length} repos with requirements.txt
+            </Badge>
           </div>
         </CardContent>
       </Card>

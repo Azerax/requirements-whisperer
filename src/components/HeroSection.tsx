@@ -9,7 +9,7 @@ const HeroSection = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-card relative">
       {/* Crying Heart in red circle area */}
-      <div className="absolute top-32 left-20 animate-bounce">
+      <div className="absolute top-12 left-20 animate-bounce">
         <div className="relative">
           <div className="w-32 h-32 border-4 border-red-500 rounded-full flex items-center justify-center bg-red-500/10">
             <Heart className="h-16 w-16 text-red-500 fill-red-500" />

@@ -28,21 +28,30 @@ export class RealGitHubClient {
   }
 
   private async makeRequest<T>(endpoint: string): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log(`🌐 Making GitHub API request to: ${url}`);
+    console.log(`🔑 Using token: ${this.accessToken ? 'Yes' : 'No'}`);
+    
     const headers: Record<string, string> = {
       'Accept': 'application/vnd.github.v3+json',
     };
 
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
+      console.log(`🔒 Authorization header set`);
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, { headers });
-
+    const response = await fetch(url, { headers });
+    console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+    
     if (!response.ok) {
+      console.error(`❌ GitHub API Error: ${response.status} ${response.statusText}`);
       throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`📦 Response data length/type: ${Array.isArray(data) ? data.length + ' items' : typeof data}`);
+    return data;
   }
 
   async getUser(username: string): Promise<GitHubUser> {

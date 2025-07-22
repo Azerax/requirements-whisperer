@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import Dashboard from "@/components/Dashboard";
-import { GitHubProvider, useGitHub } from "@/hooks/useGitHub";
+import { GitHubProvider, useGitHub } from "@/hooks/useRealGitHub";
 import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {

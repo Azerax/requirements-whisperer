@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useGitHub } from "@/hooks/useGitHub";
+import { useGitHub } from "@/hooks/useRealGitHub";
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -16,7 +16,7 @@ import {
   RefreshCw,
   ExternalLink
 } from "lucide-react";
-import { GitHubRepository } from "@/lib/simple-github";
+import { GitHubRepository } from "@/lib/real-github";
 
 interface RepositoryAnalysis {
   repository: GitHubRepository;
@@ -49,7 +49,7 @@ const Dashboard = () => {
     
     setLoading(true);
     try {
-      const repos = await apiClient.getUserRepositories();
+      const repos = await apiClient.getUserRepositories(user.login);
       setRepositories(repos);
       
       // Auto-analyze repositories with requirements.txt
@@ -66,21 +66,19 @@ const Dashboard = () => {
   };
 
   const analyzeRepositoriesWithRequirements = async (repos: GitHubRepository[]) => {
-    if (!apiClient) return;
+    if (!apiClient || !user) return;
 
-    const analysisPromises = repos.slice(0, 5).map(async (repo) => {
+    const analysisPromises = repos.slice(0, 10).map(async (repo) => {
       try {
-        const analysis = await apiClient.analyzeRepository(repo);
+        const [owner, repoName] = repo.full_name.split('/');
+        const analysis = await apiClient.analyzeCodeCompliance(owner, repoName);
         
         return {
           repository: repo,
-          totalFiles: analysis.sampleAnalysis.totalFiles,
-          pythonFiles: [], // Simplified for demo
-          violations: analysis.sampleAnalysis.violations.map(v => ({
-            file: v.file,
-            violations: [v.issue]
-          })),
-          hasRequirementsTxt: analysis.hasRequirements,
+          totalFiles: analysis.totalFiles,
+          pythonFiles: analysis.pythonFiles,
+          violations: analysis.violations,
+          hasRequirementsTxt: true,
           lastChecked: new Date()
         };
       } catch (error) {
@@ -101,21 +99,19 @@ const Dashboard = () => {
   };
 
   const analyzeRepository = async (repo: GitHubRepository) => {
-    if (!apiClient) return;
+    if (!apiClient || !user) return;
     
     setSelectedRepo(repo.id.toString());
     try {
-      const analysis = await apiClient.analyzeRepository(repo);
+      const [owner, repoName] = repo.full_name.split('/');
+      const analysis = await apiClient.analyzeCodeCompliance(owner, repoName);
       
       const newAnalysis: RepositoryAnalysis = {
         repository: repo,
-        totalFiles: analysis.sampleAnalysis.totalFiles,
-        pythonFiles: [],
-        violations: analysis.sampleAnalysis.violations.map(v => ({
-          file: v.file,
-          violations: [v.issue]
-        })),
-        hasRequirementsTxt: analysis.hasRequirements,
+        totalFiles: analysis.totalFiles,
+        pythonFiles: analysis.pythonFiles,
+        violations: analysis.violations,
+        hasRequirementsTxt: true,
         lastChecked: new Date()
       };
 
@@ -131,11 +127,11 @@ const Dashboard = () => {
 
       toast({
         title: "Analysis Complete",
-        description: `${analysis.hasRequirements ? `Found ${analysis.sampleAnalysis.violations.length} violations` : 'No requirements.txt found'} in ${repo.name}`
+        description: `Found ${analysis.violations.length} violations in ${repo.name}`
       });
     } catch (error: any) {
       toast({
-        title: "Analysis Failed",
+        title: "Analysis Failed", 
         description: error.message,
         variant: "destructive"
       });

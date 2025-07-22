@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Github, Shield, Settings, LogOut } from "lucide-react";
-import { useGitHub } from "@/hooks/useGitHub";
+import { useGitHub } from "@/hooks/useRealGitHub";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import GitHubConnectDialog from "@/components/GitHubConnectDialog";
 
 const Header = () => {
-  const { user, connectGitHub, disconnect, error } = useGitHub();
+  const { user, disconnect, error } = useGitHub();
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
 
   return (
     <>
@@ -51,7 +54,8 @@ const Header = () => {
                 <Button 
                   variant="hero" 
                   className="gap-2"
-                  onClick={connectGitHub}
+                  onClick={() => setConnectDialogOpen(true)}
+                  data-connect-github
                 >
                   <Github className="h-4 w-4" />
                   Connect GitHub
@@ -61,6 +65,11 @@ const Header = () => {
           </div>
         </div>
       </header>
+      
+      <GitHubConnectDialog 
+        open={connectDialogOpen}
+        onOpenChange={setConnectDialogOpen}
+      />
     </>
   );
 };

@@ -148,21 +148,29 @@ export class RealGitHubClient {
     content: string;
     dependencies: string[];
   } | null> {
-    const content = await this.getFileContent(owner, repo, 'requirements.txt');
-    if (!content) return null;
+    // Try different case variations of requirements.txt
+    const possibleNames = ['requirements.txt', 'Requirements.txt', 'REQUIREMENTS.TXT', 'requirements.TXT'];
+    
+    for (const filename of possibleNames) {
+      const content = await this.getFileContent(owner, repo, filename);
+      if (content) {
+        this.log(`📋 Found requirements file: ${filename}`);
+        const dependencies = content
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line && !line.startsWith('#') && !line.startsWith('-'))
+          .map(line => {
+            // Extract package name from various requirement formats
+            const match = line.match(/^([a-zA-Z0-9\-_\.]+)/);
+            return match ? match[1] : line;
+          })
+          .filter(Boolean);
 
-    const dependencies = content
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('#') && !line.startsWith('-'))
-      .map(line => {
-        // Extract package name from various requirement formats
-        const match = line.match(/^([a-zA-Z0-9\-_\.]+)/);
-        return match ? match[1] : line;
-      })
-      .filter(Boolean);
-
-    return { content, dependencies };
+        return { content, dependencies };
+      }
+    }
+    
+    return null;
   }
 
   async findPythonFiles(owner: string, repo: string, path: string = '', maxDepth: number = 3): Promise<string[]> {

@@ -1,11 +1,11 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import Dashboard from "@/components/Dashboard";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { GitHubProvider, useGitHub } from "@/hooks/useGitHub";
 import { Toaster } from "@/components/ui/toaster";
 
 const IndexContent = () => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useGitHub();
 
   if (loading) {
     return (
@@ -28,10 +28,10 @@ const IndexContent = () => {
 
 const Index = () => {
   return (
-    <AuthProvider>
+    <GitHubProvider>
       <IndexContent />
       <Toaster />
-    </AuthProvider>
+    </GitHubProvider>
   );
 };
 

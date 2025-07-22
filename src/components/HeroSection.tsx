@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Github, Shield, Eye, AlertTriangle, CheckCircle, Zap } from "lucide-react";
+import { useGitHub } from "@/hooks/useGitHub";
 
 const HeroSection = () => {
+  const { connectGitHub } = useGitHub();
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-card">
       <div className="container mx-auto px-6 py-20">
@@ -34,10 +36,7 @@ const HeroSection = () => {
               variant="hero" 
               size="lg" 
               className="gap-3 px-8 py-6 text-lg"
-              onClick={() => {
-                const authButton = document.querySelector('[data-connect-github]') as HTMLButtonElement;
-                authButton?.click();
-              }}
+              onClick={connectGitHub}
             >
               <Github className="h-5 w-5" />
               Connect GitHub Account

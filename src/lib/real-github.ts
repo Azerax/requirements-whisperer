@@ -57,8 +57,15 @@ export class RealGitHubClient {
   }
 
   async getUserRepositories(username: string): Promise<GitHubRepository[]> {
-    const repos = await this.makeRequest<GitHubRepository[]>(`/users/${username}/repos?sort=updated&per_page=100`);
-    return repos.filter(repo => !repo.private); // Only public repos without token
+    if (this.accessToken) {
+      // If we have a token, use the authenticated user's repos endpoint to get both public and private
+      const repos = await this.makeRequest<GitHubRepository[]>(`/user/repos?sort=updated&per_page=100`);
+      return repos;
+    } else {
+      // Without token, only public repos
+      const repos = await this.makeRequest<GitHubRepository[]>(`/users/${username}/repos?sort=updated&per_page=100`);
+      return repos.filter(repo => !repo.private);
+    }
   }
 
   async getFileContent(owner: string, repo: string, path: string, branch: string = 'main'): Promise<string | null> {

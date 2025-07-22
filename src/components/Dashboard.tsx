@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useGitHub } from "@/hooks/useRealGitHub";
-import { complianceLogger } from "@/lib/supabase";
+import { complianceLogger } from "@/lib/compliance-logger";
 import { 
   AlertTriangle, 
   CheckCircle, 

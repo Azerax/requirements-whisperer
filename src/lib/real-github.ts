@@ -1,5 +1,5 @@
 // Real GitHub API client for actual GitHub integration
-import { complianceLogger } from './supabase';
+import { complianceLogger } from './compliance-logger';
 export interface GitHubRepository {
   id: number;
   name: string;

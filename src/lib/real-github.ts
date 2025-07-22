@@ -57,13 +57,31 @@ export class RealGitHubClient {
     const response = await fetch(url, { headers });
     this.log(`📡 Response status: ${response.status} ${response.statusText}`);
     
+    // Log response headers for debugging scopes
+    const scopeHeader = response.headers.get('x-oauth-scopes');
+    const acceptedScopesHeader = response.headers.get('x-accepted-oauth-scopes');
+    if (scopeHeader) {
+      this.log(`🔑 Token scopes: ${scopeHeader}`);
+    }
+    if (acceptedScopesHeader) {
+      this.log(`✅ Accepted scopes for this endpoint: ${acceptedScopesHeader}`);
+    }
+    
     if (!response.ok) {
       this.log(`❌ GitHub API Error: ${response.status} ${response.statusText}`);
       throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    this.log(`📦 Response data length/type: ${Array.isArray(data) ? data.length + ' items' : typeof data}`);
+    this.log(`📦 Response data type: ${Array.isArray(data) ? `Array with ${data.length} items` : typeof data}`);
+    
+    // Log first few items for debugging
+    if (Array.isArray(data) && data.length > 0) {
+      this.log(`📋 First repository: ${data[0].name || data[0].login || JSON.stringify(data[0]).substring(0, 100)}`);
+    } else if (Array.isArray(data) && data.length === 0) {
+      this.log(`⚠️ Empty array returned - check token scopes!`);
+    }
+    
     return data;
   }
 

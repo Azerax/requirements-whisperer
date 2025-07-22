@@ -37,6 +37,14 @@ const Dashboard = () => {
   const [analyses, setAnalyses] = useState<RepositoryAnalysis[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+
+  const addDebugLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    console.log(logEntry);
+    setDebugLogs(prev => [logEntry, ...prev.slice(0, 19)]); // Keep last 20 logs
+  };
 
   useEffect(() => {
     if (apiClient && user) {
@@ -46,24 +54,24 @@ const Dashboard = () => {
 
   const loadRepositories = async () => {
     if (!apiClient) {
-      console.log('❌ No apiClient available');
+      addDebugLog('❌ No apiClient available');
       return;
     }
     
-    console.log('🔄 Loading repositories for user:', user?.login);
-    console.log('🔑 API client has token:', !!(apiClient as any).accessToken);
+    addDebugLog(`🔄 Loading repositories for user: ${user?.login}`);
+    addDebugLog(`🔑 API client has token: ${!!(apiClient as any).accessToken}`);
     
     setLoading(true);
     try {
-      console.log('📡 Calling getUserRepositories...');
+      addDebugLog('📡 Calling getUserRepositories...');
       const repos = await apiClient.getUserRepositories(user.login);
-      console.log('✅ Loaded repositories:', repos.length, repos.map(r => r.name));
+      addDebugLog(`✅ Loaded ${repos.length} repositories: ${repos.map(r => r.name).join(', ')}`);
       setRepositories(repos);
       
       // Auto-analyze repositories with requirements.txt
       analyzeRepositoriesWithRequirements(repos);
     } catch (error) {
-      console.error('❌ Error loading repositories:', error);
+      addDebugLog(`❌ Error loading repositories: ${error}`);
       toast({
         title: "Error",
         description: "Failed to load repositories",
@@ -77,18 +85,17 @@ const Dashboard = () => {
   const analyzeRepositoriesWithRequirements = async (repos: GitHubRepository[]) => {
     if (!apiClient || !user) return;
 
-    console.log('Starting analysis for repositories:', repos.map(r => r.name));
+    addDebugLog(`🔍 Starting analysis for ${repos.length} repositories: ${repos.map(r => r.name).join(', ')}`);
 
     const analysisPromises = repos.slice(0, 10).map(async (repo) => {
       try {
         const [owner, repoName] = repo.full_name.split('/');
-        console.log(`\n=== Analyzing ${repo.full_name} ===`);
-        console.log(`Owner: ${owner}, Repo: ${repoName}`);
+        addDebugLog(`=== Analyzing ${repo.full_name} ===`);
         
         // First check if requirements.txt exists
-        console.log('Checking for requirements.txt...');
+        addDebugLog(`Checking ${repo.name} for requirements.txt...`);
         const requirementsTxt = await apiClient.getRequirementsTxt(owner, repoName);
-        console.log(`Requirements.txt result:`, requirementsTxt);
+        addDebugLog(`Requirements.txt for ${repo.name}: ${requirementsTxt ? 'Found ✅' : 'Not found ❌'}`);
         
         if (!requirementsTxt) {
           console.log(`❌ No requirements.txt found in ${repo.full_name}`);
@@ -413,6 +420,35 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Debug Logs */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-primary" />
+            Debug Logs
+            <Button 
+              onClick={() => setDebugLogs([])} 
+              size="sm" 
+              variant="ghost"
+              className="ml-auto"
+            >
+              Clear
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
+            {debugLogs.length === 0 ? (
+              <p className="text-muted-foreground">No debug logs yet. Click refresh to see logs.</p>
+            ) : (
+              debugLogs.map((log, index) => (
+                <div key={index} className="mb-1">{log}</div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

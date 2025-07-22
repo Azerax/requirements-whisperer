@@ -1,1 +1,14 @@
+requests==2.31.0
+flask==2.3.3
+
+# Forbidden imports that should trigger violations
+no pandas
+no numpy
+no matplotlib
+forbidden seaborn
+forbidden sklearn
+forbidden tensorflow
+forbidden fastapi
+
+# Rule violations
 do not hard code any values

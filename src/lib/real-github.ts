@@ -162,6 +162,7 @@ export class RealGitHubClient {
   async getRequirementsTxt(owner: string, repo: string): Promise<{
     content: string;
     dependencies: string[];
+    forbiddenImports: string[];
   } | null> {
     // Try different case variations of requirements.txt
     const possibleNames = ['requirements.txt', 'Requirements.txt', 'REQUIREMENTS.TXT', 'requirements.TXT'];
@@ -170,18 +171,33 @@ export class RealGitHubClient {
       const content = await this.getFileContent(owner, repo, filename);
       if (content) {
         this.log(`📋 Found requirements file: ${filename}`);
-        const dependencies = content
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => line && !line.startsWith('#') && !line.startsWith('-'))
-          .map(line => {
-            // Extract package name from various requirement formats
-            const match = line.match(/^([a-zA-Z0-9\-_\.]+)/);
-            return match ? match[1] : line;
-          })
-          .filter(Boolean);
+        
+        const lines = content.split('\n').map(line => line.trim());
+        const dependencies: string[] = [];
+        const forbiddenImports: string[] = [];
+        
+        lines.forEach(line => {
+          if (line && !line.startsWith('#')) {
+            // Check for forbidden imports (lines starting with "no " or "forbidden ")
+            if (line.toLowerCase().startsWith('no ') || line.toLowerCase().startsWith('forbidden ')) {
+              const forbidden = line.replace(/^(no|forbidden)\s+/i, '').trim();
+              if (forbidden) {
+                forbiddenImports.push(forbidden);
+              }
+            } else if (!line.startsWith('-')) {
+              // Regular dependency
+              const match = line.match(/^([a-zA-Z0-9\-_\.]+)/);
+              if (match) {
+                dependencies.push(match[1]);
+              }
+            }
+          }
+        });
 
-        return { content, dependencies };
+        this.log(`📦 Found ${dependencies.length} allowed dependencies: ${dependencies.slice(0, 3).join(', ')}${dependencies.length > 3 ? '...' : ''}`);
+        this.log(`🚫 Found ${forbiddenImports.length} forbidden imports: ${forbiddenImports.join(', ')}`);
+
+        return { content, dependencies, forbiddenImports };
       }
     }
     
@@ -219,6 +235,7 @@ export class RealGitHubClient {
       violations: string[];
     }>;
     requirements: string[] | null;
+    forbiddenImports: string[] | null;
   }> {
     // Get requirements.txt first
     const requirementsTxt = await this.getRequirementsTxt(owner, repo);
@@ -253,7 +270,7 @@ export class RealGitHubClient {
       this.log(`📄 Analyzing file: ${filePath}`);
       const content = await this.getFileContent(owner, repo, filePath);
       if (content) {
-        const fileViolations = this.analyzeFileCompliance(content, requirementsTxt.dependencies);
+        const fileViolations = this.analyzeFileCompliance(content, requirementsTxt.forbiddenImports);
         if (fileViolations.length > 0) {
           this.log(`⚠️ Found ${fileViolations.length} violations in ${filePath}`);
           violations.push({ file: filePath, violations: fileViolations });
@@ -271,24 +288,14 @@ export class RealGitHubClient {
       totalFiles: pythonFiles.length,
       pythonFiles,
       violations,
-      requirements: requirementsTxt.dependencies
+      requirements: requirementsTxt.dependencies,
+      forbiddenImports: requirementsTxt.forbiddenImports
     };
   }
 
-  private analyzeFileCompliance(content: string, allowedDependencies: string[]): string[] {
+  private analyzeFileCompliance(content: string, forbiddenImports: string[]): string[] {
     const violations: string[] = [];
     const lines = content.split('\n');
-
-    // Standard library modules (Python built-ins)
-    const standardLibModules = new Set([
-      'os', 'sys', 'json', 'datetime', 'collections', 'itertools', 'functools',
-      'pathlib', 'urllib', 'http', 'logging', 'typing', 're', 'math', 'random',
-      'time', 'asyncio', 'threading', 'multiprocessing', 'subprocess', 'argparse',
-      'configparser', 'csv', 'xml', 'html', 'email', 'base64', 'hashlib', 'hmac',
-      'sqlite3', 'pickle', 'tempfile', 'shutil', 'glob', 'fnmatch', 'linecache',
-      'textwrap', 'string', 'bytes', 'io', 'warnings', 'contextlib', 'abc',
-      'numbers', 'decimal', 'fractions', 'statistics', 'unittest', 'doctest'
-    ]);
 
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
@@ -305,12 +312,9 @@ export class RealGitHubClient {
           if (match) moduleName = match[1];
         }
         
-        if (moduleName && 
-            !standardLibModules.has(moduleName) && 
-            !allowedDependencies.includes(moduleName) &&
-            !moduleName.startsWith('.') && // Relative imports
-            moduleName !== '__future__') {
-          violations.push(`Line ${index + 1}: Unauthorized import '${moduleName}' not found in requirements.txt`);
+        // Only flag if the import is explicitly forbidden
+        if (moduleName && forbiddenImports.includes(moduleName)) {
+          violations.push(`Line ${index + 1}: Forbidden import '${moduleName}' is not allowed in this project`);
         }
       }
     });

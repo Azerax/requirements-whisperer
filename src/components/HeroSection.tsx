@@ -1,13 +1,29 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Github, Shield, Eye, AlertTriangle, CheckCircle, Zap } from "lucide-react";
+import { Github, Shield, AlertTriangle, CheckCircle, Zap, Heart } from "lucide-react";
 import { useGitHub } from "@/hooks/useRealGitHub";
 
 const HeroSection = () => {
   const { user } = useGitHub();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-card">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-card relative">
+      {/* Crying Heart in red circle area */}
+      <div className="absolute top-32 left-20 animate-bounce">
+        <div className="relative">
+          <div className="w-32 h-32 border-4 border-red-500 rounded-full flex items-center justify-center bg-red-500/10">
+            <Heart className="h-16 w-16 text-red-500 fill-red-500" />
+          </div>
+          {/* Crying tears */}
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
+            <div className="w-2 h-8 bg-blue-400 rounded-full opacity-80 animate-pulse"></div>
+          </div>
+          <div className="absolute -bottom-6 left-1/3 transform -translate-x-1/2">
+            <div className="w-1.5 h-6 bg-blue-400 rounded-full opacity-60 animate-pulse delay-75"></div>
+          </div>
+        </div>
+      </div>
+      
       <div className="container mx-auto px-6 py-20">
         <div className="text-center space-y-8 max-w-4xl mx-auto">
           {/* Hero Content */}
@@ -30,8 +46,8 @@ const HeroSection = () => {
             </p>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          {/* CTA Button */}
+          <div className="flex justify-center">
             <Button 
               variant="hero" 
               size="lg" 
@@ -43,10 +59,6 @@ const HeroSection = () => {
             >
               <Github className="h-5 w-5" />
               Connect GitHub Account
-            </Button>
-            <Button variant="outline" size="lg" className="px-8 py-6 text-lg">
-              <Eye className="h-5 w-5" />
-              View Demo
             </Button>
           </div>
 

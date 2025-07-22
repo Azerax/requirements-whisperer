@@ -198,9 +198,64 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_audit: {
+        Args: {
+          p_audit_id: string
+          p_total_files: number
+          p_violation_count: number
+          p_compliant_files: number
+        }
+        Returns: {
+          id: string
+          status: string
+          completed_at: string
+        }[]
+      }
+      create_audit: {
+        Args: { p_repository_id: string }
+        Returns: {
+          id: string
+          repository_id: string
+          status: string
+          started_at: string
+        }[]
+      }
       ensure_user_profile: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      log_violation: {
+        Args: {
+          p_audit_id: string
+          p_repository_id: string
+          p_file_path: string
+          p_violation_type: string
+          p_severity: string
+          p_description: string
+          p_category?: string
+          p_line_number?: number
+        }
+        Returns: {
+          id: string
+          audit_id: string
+          severity: string
+        }[]
+      }
+      upsert_repository: {
+        Args: {
+          p_name: string
+          p_full_name: string
+          p_github_id: number
+          p_user_id: string
+          p_description?: string
+          p_url?: string
+        }
+        Returns: {
+          id: string
+          name: string
+          full_name: string
+          github_id: number
+        }[]
       }
     }
     Enums: {

@@ -1,4 +1,5 @@
 // Real GitHub API client for actual GitHub integration
+import { complianceLogger } from './supabase';
 export interface GitHubRepository {
   id: number;
   name: string;
@@ -237,6 +238,18 @@ export class RealGitHubClient {
     requirements: string[] | null;
     forbiddenImports: string[] | null;
   }> {
+    // Create or update repository record
+    const repoUrl = `https://github.com/${owner}/${repo}`;
+    let repository;
+    let audit;
+    
+    try {
+      repository = await complianceLogger.upsertRepository(owner, repo, repoUrl);
+      audit = await complianceLogger.createAudit(repository.id);
+    } catch (error) {
+      console.error('Failed to initialize database logging:', error);
+      // Continue with analysis even if logging fails
+    }
     // Get requirements.txt first
     const requirementsTxt = await this.getRequirementsTxt(owner, repo);
     if (!requirementsTxt) {
@@ -274,6 +287,55 @@ export class RealGitHubClient {
         if (fileViolations.length > 0) {
           this.log(`⚠️ Found ${fileViolations.length} violations in ${filePath}`);
           violations.push({ file: filePath, violations: fileViolations });
+          
+          // Log violations to database
+          if (repository && audit) {
+            for (const violation of fileViolations) {
+              try {
+                // Extract line number and description
+                const lineMatch = violation.match(/Line (\d+): (.+)/);
+                const lineNumber = lineMatch ? parseInt(lineMatch[1]) : undefined;
+                const description = lineMatch ? lineMatch[2] : violation;
+                
+                // Categorize violation
+                let category = 'general';
+                let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
+                
+                if (violation.includes('Forbidden import')) {
+                  category = 'forbidden_imports';
+                  severity = 'high';
+                } else if (violation.includes('Hardcoded value')) {
+                  category = 'hardcoded_values';
+                  severity = 'medium';
+                } else if (violation.includes('security risk')) {
+                  category = 'security';
+                  severity = 'critical';
+                } else if (violation.includes('Auth logic')) {
+                  category = 'authentication';
+                  severity = 'high';
+                } else if (violation.includes('API call missing error handling')) {
+                  category = 'error_handling';
+                  severity = 'medium';
+                } else if (violation.includes('Console.log')) {
+                  category = 'code_quality';
+                  severity = 'low';
+                }
+
+                await complianceLogger.logViolation(
+                  audit.id,
+                  repository.id,
+                  filePath,
+                  category,
+                  severity,
+                  description,
+                  category,
+                  lineNumber
+                );
+              } catch (logError) {
+                console.error('Failed to log violation:', logError);
+              }
+            }
+          }
         } else {
           this.log(`✅ No violations in ${filePath}`);
         }
@@ -283,6 +345,22 @@ export class RealGitHubClient {
     }
 
     this.log(`🎯 Analysis complete: ${violations.length} files with violations, ${filesToAnalyze.length - violations.length} compliant`);
+
+    // Complete the audit
+    if (repository && audit) {
+      try {
+        const totalViolations = violations.reduce((sum, v) => sum + v.violations.length, 0);
+        await complianceLogger.completeAudit(
+          audit.id,
+          pythonFiles.length,
+          violations.length,
+          filesToAnalyze.length - violations.length,
+          totalViolations
+        );
+      } catch (error) {
+        console.error('Failed to complete audit:', error);
+      }
+    }
 
     return {
       totalFiles: pythonFiles.length,

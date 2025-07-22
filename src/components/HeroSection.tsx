@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Github, Shield, AlertTriangle, CheckCircle, Zap, Heart } from "lucide-react";
+import { Github, Shield, AlertTriangle, CheckCircle, Zap, Heart, FileText } from "lucide-react";
 import { useGitHub } from "@/hooks/useRealGitHub";
 
 const HeroSection = () => {
@@ -47,8 +47,8 @@ const HeroSection = () => {
             </p>
           </div>
 
-          {/* CTA Button */}
-          <div className="flex justify-center">
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button 
               variant="hero" 
               size="lg" 
@@ -60,6 +60,21 @@ const HeroSection = () => {
             >
               <Github className="h-5 w-5" />
               Connect GitHub Account
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="gap-3 px-8 py-6 text-lg border-primary/20 hover:border-primary"
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = '/sample-requirements.txt';
+                link.download = 'sample-requirements.txt';
+                link.click();
+              }}
+            >
+              <FileText className="h-5 w-5" />
+              Sample Requirements.txt
             </Button>
           </div>
 

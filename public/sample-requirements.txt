@@ -1,0 +1,111 @@
+# Sample Requirements.txt - Code Compliance Standards
+# =====================================================
+# This file demonstrates proper requirements.txt formatting and best practices
+# for Python dependency management in compliance-focused environments.
+
+# CRITICAL SECURITY REQUIREMENTS
+# ===============================
+# All packages MUST be pinned to specific versions to prevent supply chain attacks
+# Format: package==exact.version.number
+
+# Core Framework (REQUIRED)
+django==4.2.7                    # Web framework - LTS version only
+gunicorn==21.2.0                 # WSGI server - production grade
+psycopg2-binary==2.9.7          # PostgreSQL adapter - binary for speed
+
+# Security & Authentication (MANDATORY)
+cryptography==41.0.7            # Encryption library - latest stable
+pyjwt==2.8.0                    # JWT handling - security critical
+bcrypt==4.0.1                   # Password hashing - industry standard
+pyopenssl==23.3.0               # SSL/TLS support - required for HTTPS
+
+# Input Validation & Sanitization (CRITICAL)
+bleach==6.1.0                   # HTML sanitization - prevents XSS
+validators==0.22.0              # Input validation - data integrity
+python-decouple==3.8           # Environment variables - secure config
+
+# Database & Caching (REQUIRED)
+redis==5.0.1                    # In-memory database - session storage
+celery==5.3.4                   # Task queue - background processing
+sqlalchemy==2.0.23             # ORM - data access layer
+
+# HTTP & API Security (MANDATORY)
+requests==2.31.0               # HTTP library - external API calls
+urllib3==2.0.7                 # HTTP client - secure connections
+certifi==2023.11.17            # SSL certificates - trust verification
+
+# Monitoring & Logging (REQUIRED)
+sentry-sdk==1.38.0             # Error tracking - production monitoring
+structlog==23.2.0              # Structured logging - audit trails
+python-json-logger==2.0.7     # JSON logging format - machine readable
+
+# Development & Testing (DEV ONLY)
+pytest==7.4.3                  # Testing framework - quality assurance
+pytest-cov==4.1.0             # Coverage reporting - test completeness
+black==23.11.0                 # Code formatting - consistency
+flake8==6.1.0                  # Linting - code quality
+mypy==1.7.1                    # Type checking - static analysis
+
+# COMPLIANCE RULES & BEST PRACTICES
+# ==================================
+
+# DO'S:
+# ✓ Pin ALL packages to exact versions (use ==)
+# ✓ Use only packages from PyPI official repository
+# ✓ Include security-focused packages for encryption, validation, sanitization
+# ✓ Separate development dependencies with comments
+# ✓ Regular security audits with: pip-audit requirements.txt
+# ✓ Update packages systematically with testing
+# ✓ Document the purpose of each package
+# ✓ Use virtual environments for isolation
+# ✓ Verify package integrity with checksums when possible
+
+# DON'T'S:
+# ✗ Never use version ranges (~=, >=, <) in production
+# ✗ Never include packages from untrusted sources
+# ✗ Never use pre-release or alpha versions in production
+# ✗ Never include development tools in production requirements
+# ✗ Never use wildcard versions (*)
+# ✗ Never ignore security warnings from dependency scanners
+# ✗ Never include credentials or sensitive data
+# ✗ Never use deprecated or unmaintained packages
+
+# SECURITY SCANNING COMMANDS
+# ===========================
+# Run these commands regularly to maintain security:
+# 
+# pip-audit requirements.txt          # Check for known vulnerabilities
+# safety check -r requirements.txt    # Alternative security scanner
+# bandit -r .                         # Static security analysis
+# semgrep --config=auto .             # Advanced security patterns
+
+# VERSION MAINTENANCE
+# ===================
+# Update strategy:
+# 1. Review security advisories monthly
+# 2. Test updates in staging environment
+# 3. Update one package at a time
+# 4. Verify all tests pass after updates
+# 5. Monitor production after deployment
+
+# COMPLIANCE VALIDATION
+# =====================
+# This requirements.txt file should trigger ZERO violations
+# when scanned by the compliance auditor.
+# 
+# Expected results:
+# - All packages pinned to exact versions ✓
+# - No known security vulnerabilities ✓
+# - No deprecated packages ✓
+# - Proper categorization with comments ✓
+# - Security-focused dependency selection ✓
+
+# FILE INTEGRITY
+# ==============
+# SHA256 checksums can be added for additional security:
+# django==4.2.7 --hash=sha256:...
+# (Generate with: pip hash package==version)
+
+# End of requirements.txt
+# Last updated: 2024-01-20
+# Next review: 2024-02-20

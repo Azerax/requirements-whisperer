@@ -232,8 +232,6 @@ export type Database = {
           p_violation_type: string
           p_severity: string
           p_description: string
-          p_category?: string
-          p_line_number?: number
         }
         Returns: {
           id: string
@@ -247,8 +245,6 @@ export type Database = {
           p_full_name: string
           p_github_id: number
           p_user_id: string
-          p_description?: string
-          p_url?: string
         }
         Returns: {
           id: string

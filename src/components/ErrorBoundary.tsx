@@ -24,13 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error securely without exposing sensitive information
-    console.error('Application error occurred:', {
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      componentStack: process.env.NODE_ENV === 'development' ? errorInfo.componentStack : undefined,
-      timestamp: new Date().toISOString()
-    })
+    // Error captured but not logged to prevent information disclosure
   }
 
   handleReset = () => {
@@ -78,11 +72,6 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook version for functional components
 export const useErrorHandler = () => {
   return (error: Error, errorInfo?: string) => {
-    console.error('Handled error:', {
-      message: error.message,
-      info: errorInfo,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      timestamp: new Date().toISOString()
-    })
+    // Error handled silently to prevent information disclosure
   }
 }

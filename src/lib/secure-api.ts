@@ -80,7 +80,6 @@ export class SecureApiClient {
       return { data, success: true }
 
     } catch (error) {
-      console.error('API request failed:', error)
       return {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
         success: false
@@ -124,7 +123,6 @@ export class SecureApiClient {
       return { data, success: true }
 
     } catch (error) {
-      console.error('API request failed:', error)
       return {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
         success: false

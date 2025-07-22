@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useGitHub } from "@/hooks/useRealGitHub";
+import { complianceLogger } from "@/lib/supabase";
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -14,7 +15,8 @@ import {
   Shield,
   Eye,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  LogOut
 } from "lucide-react";
 import { GitHubRepository } from "@/lib/real-github";
 
@@ -31,13 +33,15 @@ interface RepositoryAnalysis {
 }
 
 const Dashboard = () => {
-  const { user, apiClient } = useGitHub();
+  const { user, apiClient, disconnect } = useGitHub();
   const { toast } = useToast();
   const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
   const [analyses, setAnalyses] = useState<RepositoryAnalysis[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [recentViolations, setRecentViolations] = useState<any[]>([]);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -46,9 +50,31 @@ const Dashboard = () => {
     setDebugLogs(prev => [logEntry, ...prev.slice(0, 19)]); // Keep last 20 logs
   };
 
+  const loadRecentViolations = async () => {
+    try {
+      addDebugLog('📊 Loading recent violations from database...');
+      const violations = await complianceLogger.getRecentViolations(5);
+      setRecentViolations(violations);
+      setLastRefreshed(new Date());
+      addDebugLog(`✅ Loaded ${violations.length} recent violations`);
+    } catch (error) {
+      console.error('❌ Failed to load recent violations:', error);
+      addDebugLog('❌ Failed to load recent violations from database');
+    }
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
+    toast({
+      title: "Disconnected",
+      description: "Successfully disconnected from GitHub",
+    });
+  };
+
   useEffect(() => {
     if (apiClient && user) {
       loadRepositories();
+      loadRecentViolations();
     }
   }, [apiClient, user]);
 
@@ -180,6 +206,9 @@ const Dashboard = () => {
         return [...prev, newAnalysis];
       });
 
+      // Refresh violations from database after analysis
+      await loadRecentViolations();
+
       toast({
         title: "Analysis Complete",
         description: `Found ${analysis.violations.length} violations in ${repo.name}`
@@ -235,7 +264,7 @@ const Dashboard = () => {
     }
   ];
 
-  const recentViolations = analyses
+  const mockRecentViolations = analyses
     .flatMap(analysis => 
       analysis.violations.flatMap(v => 
         v.violations.map(violation => ({
@@ -279,10 +308,21 @@ const Dashboard = () => {
                 )}
               </div>
             </div>
-            <Badge variant="outline" className="gap-1">
-              <CheckCircle className="h-3 w-3 text-success" />
-              {reposWithRequirements.length} repos with requirements.txt
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="gap-1">
+                <CheckCircle className="h-3 w-3 text-success" />
+                {reposWithRequirements.length} repos with requirements.txt
+              </Badge>
+              <Button 
+                onClick={handleDisconnect}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Disconnect
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -386,11 +426,21 @@ const Dashboard = () => {
         </Card>
 
         <Card className="bg-card border-border">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-foreground flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-warning" />
               Recent Violations ({recentViolations.length})
             </CardTitle>
+            <div className="flex items-center gap-2">
+              {lastRefreshed && (
+                <span className="text-xs text-muted-foreground">
+                  Last updated: {lastRefreshed.toLocaleTimeString()}
+                </span>
+              )}
+              <Button onClick={loadRecentViolations} size="sm" variant="outline">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4 max-h-96 overflow-y-auto">
             {recentViolations.length === 0 ? (
@@ -405,16 +455,25 @@ const Dashboard = () => {
                     <FileX className="h-4 w-4 text-destructive flex-shrink-0 mt-1" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-foreground text-sm">{violation.file}</span>
+                        <span className="font-medium text-foreground text-sm">{violation.file_path || violation.file}</span>
                         <Badge 
-                          variant={violation.severity === "high" ? "destructive" : "outline"}
+                          variant={violation.severity === "high" || violation.severity === "critical" ? "destructive" : "outline"}
                           className="text-xs flex-shrink-0"
                         >
                           {violation.severity}
                         </Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground block mb-2">{violation.repo}</span>
-                      <span className="text-sm text-foreground break-words">{violation.violation}</span>
+                      <span className="text-xs text-muted-foreground block mb-2">
+                        {violation.repositories?.name || violation.repo}
+                      </span>
+                      <span className="text-sm text-foreground break-words">
+                        {violation.description || violation.violation}
+                      </span>
+                      {violation.created_at && (
+                        <span className="text-xs text-muted-foreground block mt-2">
+                          {new Date(violation.created_at).toLocaleString()}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

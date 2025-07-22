@@ -43,6 +43,7 @@ const HeroSection = () => {
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Automatically audit your GitHub repositories against requirements.txt files. 
               Get real-time monitoring and instant alerts when code drifts from specifications.
+              And by automatic we mean manual, you have to manually click the analyze button for now.
             </p>
           </div>
 

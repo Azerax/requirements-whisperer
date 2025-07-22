@@ -6,10 +6,10 @@ export class ComplianceLogger {
   async upsertRepository(owner: string, name: string, url: string) {
     console.log(`📊 Upserting repository: ${owner}/${name}`)
     
-    // Use the helper function to get or create user profile
-    const { data: userId } = await supabase.rpc('ensure_user_profile')
+    // Always use the Unlovable user ID
+    const userId = '11111111-1111-1111-1111-111111111111'
     
-    // Extract GitHub ID from URL or generate one based on repo name
+    // Generate consistent GitHub ID based on repo name
     const githubId = Math.abs(this.hashCode(`${owner}/${name}`))
     
     const { data, error } = await supabase

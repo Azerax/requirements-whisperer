@@ -297,10 +297,21 @@ export class RealGitHubClient {
     const violations: string[] = [];
     const lines = content.split('\n');
 
+    // Track hardcoded values
+    const hardcodedPatterns = [
+      /["'](?:localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/,  // IP addresses
+      /["'](?:password|secret|key|token)["']\s*[:=]\s*["'][^"']+["']/i,  // Credentials
+      /["'](?:https?:\/\/[^"']+)["']/,  // URLs
+      /["'](?:\/[^"']*\/[^"']+)["']/,  // File paths
+      /\b\d{4,}\b/,  // Large numbers (ports, IDs)
+      /["'][A-Z0-9]{20,}["']/,  // API keys pattern
+    ];
+
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
+      const lineNum = index + 1;
       
-      // Check for import statements
+      // 1. Check for forbidden imports
       if (trimmedLine.startsWith('import ') || trimmedLine.startsWith('from ')) {
         let moduleName = '';
         
@@ -312,10 +323,124 @@ export class RealGitHubClient {
           if (match) moduleName = match[1];
         }
         
-        // Only flag if the import is explicitly forbidden
         if (moduleName && forbiddenImports.includes(moduleName)) {
-          violations.push(`Line ${index + 1}: Forbidden import '${moduleName}' is not allowed in this project`);
+          violations.push(`Line ${lineNum}: Forbidden import '${moduleName}' is not allowed in this project`);
         }
+      }
+
+      // 2. Check for hardcoded values
+      hardcodedPatterns.forEach(pattern => {
+        if (pattern.test(trimmedLine) && !trimmedLine.includes('TODO') && !trimmedLine.includes('FIXME')) {
+          violations.push(`Line ${lineNum}: Hardcoded value detected - should use environment variables or configuration`);
+        }
+      });
+
+      // 3. Required route checks (for routing files)
+      if (trimmedLine.includes('Route') && trimmedLine.includes('path=')) {
+        const requiredRoutes = ['/login', '/dashboard', '/signup'];
+        const hasRequiredRoute = requiredRoutes.some(route => trimmedLine.includes(route));
+        if (!hasRequiredRoute && (trimmedLine.includes('/') && trimmedLine.includes('element='))) {
+          // This is a route definition but not a required one - check if required routes exist elsewhere
+        }
+      }
+
+      // 4. Auth flow integrity checks
+      if (trimmedLine.includes('signIn') || trimmedLine.includes('signOut') || trimmedLine.includes('session')) {
+        if (trimmedLine.includes('// TODO') || trimmedLine.includes('// STUB')) {
+          violations.push(`Line ${lineNum}: Auth logic appears to be a stub or placeholder`);
+        }
+      }
+
+      // 5. Button/Label preservation checks
+      const criticalLabels = ['Log In', 'Sign Out', 'Login', 'Logout', 'Sign Up', 'Register'];
+      if (trimmedLine.includes('>') && trimmedLine.includes('<')) {
+        criticalLabels.forEach(label => {
+          if (trimmedLine.includes(`>${label}<`) && trimmedLine.includes('TODO')) {
+            violations.push(`Line ${lineNum}: Critical UI label '${label}' may have been modified or stubbed`);
+          }
+        });
+      }
+
+      // 6. Supabase data component checks
+      if (trimmedLine.includes('supabase.from(') && trimmedLine.includes('TODO')) {
+        violations.push(`Line ${lineNum}: Supabase data operation appears to be stubbed or incomplete`);
+      }
+
+      // 7. API error handling checks
+      if (trimmedLine.includes('.fetch(') || trimmedLine.includes('axios.') || trimmedLine.includes('api.')) {
+        const nextLines = lines.slice(index, index + 5).join('\n');
+        if (!nextLines.includes('.catch(') && !nextLines.includes('try') && !nextLines.includes('error')) {
+          violations.push(`Line ${lineNum}: API call missing error handling (.catch() or try/catch)`);
+        }
+      }
+
+      // 8. Dead code checks
+      if (trimmedLine.includes('export default') && trimmedLine.includes('() => null')) {
+        violations.push(`Line ${lineNum}: Empty component export detected - possible dead code`);
+      }
+
+      // 9. Navigation link integrity
+      if (trimmedLine.includes('href=') || trimmedLine.includes('to=')) {
+        if (trimmedLine.includes('#') || trimmedLine.includes('TODO')) {
+          violations.push(`Line ${lineNum}: Navigation link appears to be placeholder or broken`);
+        }
+      }
+
+      // 10. Custom logic preservation
+      if (trimmedLine.includes('// AI generated') || trimmedLine.includes('// Stub')) {
+        violations.push(`Line ${lineNum}: AI-generated stub detected - custom logic may have been overwritten`);
+      }
+
+      // 11. Syntax issues
+      if (trimmedLine.includes(';;') || trimmedLine.match(/\{\s*\}/)) {
+        violations.push(`Line ${lineNum}: Syntax issue detected - double semicolons or empty blocks`);
+      }
+
+      // 12. Variable naming violations
+      if (trimmedLine.match(/\b[a-z]+[A-Z][a-z]*\s*=/) && trimmedLine.includes('var ')) {
+        violations.push(`Line ${lineNum}: Inconsistent variable naming - mixing camelCase with var declaration`);
+      }
+
+      // 13. Module duplication
+      const importMatch = trimmedLine.match(/^import.*from\s+['"]([^'"]+)['"]/);
+      if (importMatch) {
+        const module = importMatch[1];
+        const otherImports = lines.filter(l => l.includes(`from '${module}'`) || l.includes(`from "${module}"`));
+        if (otherImports.length > 1) {
+          violations.push(`Line ${lineNum}: Duplicate import detected for module '${module}'`);
+        }
+      }
+
+      // 14. Missing dependencies
+      if (trimmedLine.includes('import') && trimmedLine.includes('react')) {
+        if (!content.includes('package.json') && !content.includes('dependencies')) {
+          // This would need cross-file analysis in a real implementation
+        }
+      }
+
+      // 15. Inconsistent formatting
+      if (trimmedLine.includes('  ') && trimmedLine.includes('\t')) {
+        violations.push(`Line ${lineNum}: Mixed indentation detected - tabs and spaces`);
+      }
+
+      // 16. Unsafe operations
+      if (trimmedLine.includes('eval(') || trimmedLine.includes('innerHTML =')) {
+        violations.push(`Line ${lineNum}: Unsafe operation detected - potential security risk`);
+      }
+
+      // 17. Missing type annotations (TypeScript)
+      if (trimmedLine.includes('function ') && !trimmedLine.includes(':') && !trimmedLine.includes('=>')) {
+        violations.push(`Line ${lineNum}: Function missing type annotation`);
+      }
+
+      // 18. Console logs in production
+      if (trimmedLine.includes('console.log') && !trimmedLine.includes('//')) {
+        violations.push(`Line ${lineNum}: Console.log statement should be removed for production`);
+      }
+
+      // 19. Magic numbers
+      if (trimmedLine.match(/\b\d{2,}\b/) && !trimmedLine.includes('//') && !trimmedLine.includes('const')) {
+        violations.push(`Line ${lineNum}: Magic number detected - should be defined as constant`);
       }
     });
 

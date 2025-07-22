@@ -229,6 +229,19 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-8">
+      {/* Connected Repository Info */}
+      <Card className="bg-card border-border">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-3">
+            <GitBranch className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Connected to GitHub</p>
+              <p className="font-medium text-foreground">github.com/{user?.login}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (

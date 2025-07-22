@@ -71,7 +71,25 @@ const Dashboard = () => {
     const analysisPromises = repos.slice(0, 10).map(async (repo) => {
       try {
         const [owner, repoName] = repo.full_name.split('/');
+        console.log(`Checking ${repo.full_name} for requirements.txt...`);
+        
+        // First check if requirements.txt exists
+        const requirementsTxt = await apiClient.getRequirementsTxt(owner, repoName);
+        console.log(`Requirements.txt for ${repo.full_name}:`, requirementsTxt ? 'Found' : 'Not found');
+        
+        if (!requirementsTxt) {
+          return {
+            repository: repo,
+            totalFiles: 0,
+            pythonFiles: [],
+            violations: [],
+            hasRequirementsTxt: false,
+            lastChecked: new Date()
+          };
+        }
+        
         const analysis = await apiClient.analyzeCodeCompliance(owner, repoName);
+        console.log(`Analysis for ${repo.full_name}:`, analysis);
         
         return {
           repository: repo,
@@ -95,6 +113,7 @@ const Dashboard = () => {
     });
 
     const results = await Promise.all(analysisPromises);
+    console.log('All analysis results:', results);
     setAnalyses(results);
   };
 

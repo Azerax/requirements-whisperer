@@ -220,29 +220,52 @@ export class RealGitHubClient {
     }>;
     requirements: string[] | null;
   }> {
-    // Get requirements.txt
+    // Get requirements.txt first
     const requirementsTxt = await this.getRequirementsTxt(owner, repo);
     if (!requirementsTxt) {
       throw new Error('No requirements.txt found in repository');
     }
 
-    // Find Python files
-    const pythonFiles = await this.findPythonFiles(owner, repo);
+    this.log(`📋 Found requirements with ${requirementsTxt.dependencies.length} dependencies: ${requirementsTxt.dependencies.join(', ')}`);
+
+    // Find Python files in common directories
+    const searchPaths = ['src', 'app', 'lib', '']; // Start with src/, then app/, lib/, then root
+    let pythonFiles: string[] = [];
+    
+    for (const searchPath of searchPaths) {
+      this.log(`🔍 Searching for Python files in: ${searchPath || 'root directory'}`);
+      const filesInPath = await this.findPythonFiles(owner, repo, searchPath, 3);
+      pythonFiles.push(...filesInPath);
+      this.log(`📁 Found ${filesInPath.length} Python files in ${searchPath || 'root'}: ${filesInPath.slice(0, 3).join(', ')}${filesInPath.length > 3 ? '...' : ''}`);
+    }
+
+    // Remove duplicates
+    pythonFiles = [...new Set(pythonFiles)];
+    this.log(`📊 Total unique Python files found: ${pythonFiles.length}`);
     
     const violations: Array<{ file: string; violations: string[] }> = [];
 
-    // Analyze first 10 Python files to avoid rate limits
-    const filesToAnalyze = pythonFiles.slice(0, 10);
+    // Analyze first 15 Python files to avoid rate limits
+    const filesToAnalyze = pythonFiles.slice(0, 15);
+    this.log(`🔬 Analyzing ${filesToAnalyze.length} Python files for compliance...`);
     
     for (const filePath of filesToAnalyze) {
+      this.log(`📄 Analyzing file: ${filePath}`);
       const content = await this.getFileContent(owner, repo, filePath);
       if (content) {
         const fileViolations = this.analyzeFileCompliance(content, requirementsTxt.dependencies);
         if (fileViolations.length > 0) {
+          this.log(`⚠️ Found ${fileViolations.length} violations in ${filePath}`);
           violations.push({ file: filePath, violations: fileViolations });
+        } else {
+          this.log(`✅ No violations in ${filePath}`);
         }
+      } else {
+        this.log(`❌ Could not read content of ${filePath}`);
       }
     }
+
+    this.log(`🎯 Analysis complete: ${violations.length} files with violations, ${filesToAnalyze.length - violations.length} compliant`);
 
     return {
       totalFiles: pythonFiles.length,

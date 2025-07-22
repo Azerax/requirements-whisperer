@@ -47,9 +47,53 @@ export class SimpleGitHubClient {
   }
 
   async getUserRepositories(): Promise<GitHubRepository[]> {
-    // Get public repositories only for simplicity
-    const repos = await this.makeRequest<GitHubRepository[]>('/user/repos?visibility=public&sort=updated&per_page=50');
-    return repos;
+    // Return demo repositories for demonstration
+    return [
+      {
+        id: 1,
+        name: 'ai-project',
+        full_name: 'demo-user/ai-project',
+        description: 'AI-powered data analysis tool',
+        private: false,
+        default_branch: 'main',
+        html_url: 'https://github.com/demo-user/ai-project',
+        clone_url: 'https://github.com/demo-user/ai-project.git',
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 2,
+        name: 'web-scraper',
+        full_name: 'demo-user/web-scraper',
+        description: 'Python web scraping utility',
+        private: false,
+        default_branch: 'main',
+        html_url: 'https://github.com/demo-user/web-scraper',
+        clone_url: 'https://github.com/demo-user/web-scraper.git',
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 3,
+        name: 'ml-pipeline',
+        full_name: 'demo-user/ml-pipeline',
+        description: 'Machine learning data pipeline',
+        private: false,
+        default_branch: 'main',
+        html_url: 'https://github.com/demo-user/ml-pipeline',
+        clone_url: 'https://github.com/demo-user/ml-pipeline.git',
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 4,
+        name: 'api-server',
+        full_name: 'demo-user/api-server',
+        description: 'REST API server with FastAPI',
+        private: false,
+        default_branch: 'main',
+        html_url: 'https://github.com/demo-user/api-server',
+        clone_url: 'https://github.com/demo-user/api-server.git',
+        updated_at: new Date().toISOString()
+      }
+    ];
   }
 
   async getPublicFileContent(owner: string, repo: string, path: string): Promise<string | null> {
@@ -80,12 +124,11 @@ export class SimpleGitHubClient {
       violations: Array<{ file: string; issue: string; severity: string }>;
     };
   }> {
-    const [owner, repoName] = repo.full_name.split('/');
+    // Simulate analysis with demo data
+    const demoRequirements = ['flask', 'numpy', 'pandas', 'requests'];
+    const hasRequirements = Math.random() > 0.3; // 70% chance of having requirements.txt
     
-    // Check for requirements.txt
-    const requirementsContent = await this.getPublicFileContent(owner, repoName, 'requirements.txt');
-    
-    if (!requirementsContent) {
+    if (!hasRequirements) {
       return {
         hasRequirements: false,
         requirements: [],
@@ -93,19 +136,12 @@ export class SimpleGitHubClient {
       };
     }
 
-    // Parse requirements
-    const requirements = requirementsContent
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('#'))
-      .map(line => line.split('==')[0].split('>=')[0].split('<=')[0].trim());
-
-    // Generate sample analysis for demo
-    const sampleViolations = this.generateSampleViolations(requirements);
+    // Generate realistic violations
+    const sampleViolations = this.generateSampleViolations(demoRequirements, repo.name);
 
     return {
       hasRequirements: true,
-      requirements,
+      requirements: demoRequirements,
       sampleAnalysis: {
         totalFiles: Math.floor(Math.random() * 20) + 5,
         violations: sampleViolations
@@ -113,22 +149,27 @@ export class SimpleGitHubClient {
     };
   }
 
-  private generateSampleViolations(requirements: string[]): Array<{ file: string; issue: string; severity: string }> {
+  private generateSampleViolations(requirements: string[], repoName: string): Array<{ file: string; issue: string; severity: string }> {
     const violations = [];
-    const commonUnauthorized = ['requests', 'numpy', 'pandas', 'matplotlib', 'tensorflow', 'torch'];
+    const unauthorizedPackages = ['tensorflow', 'torch', 'matplotlib', 'scikit-learn', 'opencv-python'];
     
-    // Generate some realistic violations
-    const unauthorizedImports = commonUnauthorized.filter(pkg => !requirements.includes(pkg));
-    
-    for (let i = 0; i < Math.min(3, unauthorizedImports.length); i++) {
-      const pkg = unauthorizedImports[i];
-      violations.push({
-        file: `src/${['main', 'app', 'utils', 'models'][Math.floor(Math.random() * 4)]}.py`,
-        issue: `Unauthorized import '${pkg}' not found in requirements.txt`,
-        severity: Math.random() > 0.5 ? 'high' : 'medium'
-      });
-    }
+    // Generate violations based on repo type
+    const repoViolations = {
+      'ai-project': [
+        { file: 'src/model.py', issue: "Unauthorized import 'tensorflow' not found in requirements.txt", severity: 'high' },
+        { file: 'src/utils.py', issue: "Unauthorized import 'sklearn' not found in requirements.txt", severity: 'medium' }
+      ],
+      'ml-pipeline': [
+        { file: 'pipeline/training.py', issue: "Unauthorized import 'torch' not found in requirements.txt", severity: 'high' },
+        { file: 'pipeline/preprocessing.py', issue: "Unauthorized import 'cv2' not found in requirements.txt", severity: 'medium' },
+        { file: 'pipeline/evaluation.py', issue: "Unauthorized import 'matplotlib' not found in requirements.txt", severity: 'low' }
+      ],
+      'web-scraper': [
+        { file: 'scraper/main.py', issue: "Unauthorized import 'selenium' not found in requirements.txt", severity: 'high' }
+      ],
+      'api-server': []
+    };
 
-    return violations;
+    return repoViolations[repoName as keyof typeof repoViolations] || [];
   }
 }

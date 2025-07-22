@@ -19,89 +19,58 @@ export const GitHubProvider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for OAuth callback or existing token
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    
-    if (code) {
-      // Handle OAuth callback
-      handleOAuthCallback(code);
-    } else {
-      // Check for existing token
-      const savedToken = localStorage.getItem('github_access_token');
-      if (savedToken) {
-        initializeWithToken(savedToken);
-      } else {
-        setLoading(false);
-      }
+    // Check for existing demo connection
+    const demoConnected = localStorage.getItem('github_demo_connected');
+    if (demoConnected) {
+      // Restore demo connection
+      const demoUser: GitHubUser = {
+        id: 12345,
+        login: 'demo-user',
+        name: 'Demo Developer',
+        avatar_url: 'https://github.com/github.png',
+        email: 'demo@example.com'
+      };
+      
+      const demoClient = new SimpleGitHubClient('demo_token');
+      setUser(demoUser);
+      setApiClient(demoClient);
     }
+    setLoading(false);
   }, []);
-
-  const handleOAuthCallback = async (code: string) => {
-    try {
-      setLoading(true);
-      
-      // Exchange code for access token using a public proxy service
-      const response = await fetch('https://github-oauth-proxy.vercel.app/api/oauth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          code,
-          client_id: 'Ov23liPQF0gUs3eOOSy8'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to authenticate with GitHub');
-      }
-      
-      const { access_token } = await response.json();
-      localStorage.setItem('github_access_token', access_token);
-      await initializeWithToken(access_token);
-      
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } catch (err) {
-      setError("Failed to complete GitHub authentication");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const initializeWithToken = async (token: string) => {
-    try {
-      const client = new SimpleGitHubClient(token);
-      const userData = await client.getCurrentUser();
-      
-      setApiClient(client);
-      setUser(userData);
-      setError(null);
-    } catch (err) {
-      setError("Invalid or expired GitHub token");
-      localStorage.removeItem('github_access_token');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const connectGitHub = () => {
-    // Simple GitHub OAuth redirect - no tokens needed!
-    const clientId = 'Ov23liPQF0gUs3eOOSy8'; // GitHub OAuth App (public client ID)
-    const redirectUri = encodeURIComponent(window.location.origin);
-    const scope = encodeURIComponent('public_repo read:user');
-    
-    // Redirect to GitHub OAuth
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
-  };
 
   const disconnect = () => {
     setUser(null);
     setApiClient(null);
     setError(null);
-    localStorage.removeItem('github_access_token');
+    localStorage.removeItem('github_demo_connected');
   };
+
+  const connectGitHub = () => {
+    // Simple demo connection - no external OAuth needed
+    setLoading(true);
+    
+    // Simulate GitHub connection with demo data
+    setTimeout(() => {
+      const demoUser: GitHubUser = {
+        id: 12345,
+        login: 'demo-user',
+        name: 'Demo Developer',
+        avatar_url: 'https://github.com/github.png',
+        email: 'demo@example.com'
+      };
+      
+      const demoClient = new SimpleGitHubClient('demo_token');
+      
+      setUser(demoUser);
+      setApiClient(demoClient);
+      setError(null);
+      setLoading(false);
+      
+      // Store demo connection
+      localStorage.setItem('github_demo_connected', 'true');
+    }, 1500); // Simulate loading time
+  };
+
 
   return (
     <GitHubContext.Provider value={{ user, loading, apiClient, connectGitHub, disconnect, error }}>

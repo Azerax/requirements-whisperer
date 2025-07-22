@@ -6,15 +6,19 @@ export class ComplianceLogger {
   async upsertRepository(owner: string, name: string, url: string) {
     console.log(`📊 Upserting repository: ${owner}/${name}`)
     
+    // Extract GitHub ID from URL or use a placeholder
+    const githubId = Math.floor(Math.random() * 1000000) // Placeholder for now
+    
     const { data, error } = await supabase
       .from('repositories')
       .upsert({
-        owner,
         name,
-        url,
-        last_analyzed: new Date().toISOString()
+        full_name: `${owner}/${name}`,
+        github_id: githubId,
+        user_id: '00000000-0000-0000-0000-000000000000', // Will be updated when auth is implemented
+        last_synced_at: new Date().toISOString()
       }, {
-        onConflict: 'owner,name'
+        onConflict: 'github_id'
       })
       .select()
       .single()
@@ -91,9 +95,8 @@ export class ComplianceLogger {
       .from('audits')
       .update({
         total_files: totalFiles,
-        files_with_violations: filesWithViolations,
         compliant_files: compliantFiles,
-        total_violations: totalViolations,
+        violation_count: totalViolations,
         completed_at: new Date().toISOString(),
         status: 'completed'
       })
@@ -112,7 +115,7 @@ export class ComplianceLogger {
       .from('violations')
       .select(`
         *,
-        repositories!inner(name, owner, url)
+        repositories!inner(name, full_name)
       `)
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -131,12 +134,12 @@ export class ComplianceLogger {
       .select(`
         *,
         audits!inner(
-          total_violations,
+          violation_count,
           status,
           completed_at
         )
       `)
-      .order('last_analyzed', { ascending: false })
+      .order('last_synced_at', { ascending: false })
 
     if (error) {
       console.error('❌ Failed to fetch repository stats:', error)
